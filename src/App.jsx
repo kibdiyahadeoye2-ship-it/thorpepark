@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const SUPABASE_URL = "https://ihctymhrzsuvscvsxtnl.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloY3R5bWhyenN1dnNjdnN4dG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2OTA1NzAsImV4cCI6MjA5NjI2NjU3MH0.vmGy-nsegLhtQ0LN03uv7X02rt8io_3vgOXpnK-7NfQ";
@@ -88,7 +88,7 @@ const css = `
   .chip{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#fff3f5,#fff8e1);border:1.5px solid #ffcc00;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;color:#ff6a00;}
   .chip-x{background:none;border:none;color:#ff2d55;cursor:pointer;font-size:15px;padding:0;line-height:1;font-weight:900;}
   .divider{height:1px;background:#f5f5f5;margin:16px 0;}
-  .event-card{border:2px solid #ffe0e6;border-radius:16px;padding:16px;margin-bottom:10px;background:#fff;transition:border-color .2s;}
+  .event-card{border:2px solid #ffe0e6;border-radius:16px;padding:16px;margin-bottom:10px;background:#fff;}
   .event-card:hover{border-color:#ffcc00;}
   .event-card-title{font-family:'Lilita One',cursive;font-size:17px;color:#1a1a1a;margin-bottom:4px;}
   .event-card-sub{font-size:12px;color:#aaa;font-weight:600;margin-bottom:10px;}
@@ -96,14 +96,14 @@ const css = `
   .btn-copy{background:#fff3f5;border:1.5px solid #ffb3c1;color:#ff2d55;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;}
   .btn-results{background:linear-gradient(135deg,#ff2d55,#ff6a00);border:none;color:#fff;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;}
   .final-badge{background:linear-gradient(135deg,#ffcc00,#ff6a00);color:#fff;font-size:10px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;display:inline-block;margin-bottom:8px;}
-  .date-block{border:2px solid #ffe0e6;border-radius:14px;padding:14px;margin-bottom:10px;transition:border-color .2s;}
+  .date-block{border:2px solid #ffe0e6;border-radius:14px;padding:14px;margin-bottom:10px;}
   .date-block.sel{border-color:#ffcc00;background:#fffdf0;}
   .date-block-title{font-size:14px;font-weight:800;color:#1a1a1a;margin-bottom:8px;}
   .time-row{display:flex;flex-wrap:wrap;gap:8px;}
-  .time-btn{background:#f9f9f9;border:2px solid #eee;border-radius:10px;padding:8px 14px;color:#aaa;font-size:12px;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;transition:all .15s;}
+  .time-btn{background:#f9f9f9;border:2px solid #eee;border-radius:10px;padding:8px 14px;color:#aaa;font-size:12px;font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;}
   .time-btn.active{background:linear-gradient(135deg,#ff2d55,#ff6a00);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(255,45,85,0.3);}
   .result-row{border:2px solid #ffe0e6;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:#fff;}
-  .result-row.best{border-color:#ffcc00;background:linear-gradient(135deg,#fffdf0,#fff8f0);box-shadow:0 4px 16px rgba(255,204,0,0.2);}
+  .result-row.best{border-color:#ffcc00;background:linear-gradient(135deg,#fffdf0,#fff8f0);}
   .result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
   .result-date{font-weight:800;font-size:14px;color:#1a1a1a;}
   .best-tag{background:linear-gradient(135deg,#ffcc00,#ff6a00);color:#fff;font-size:9px;font-weight:900;letter-spacing:2px;padding:3px 10px;border-radius:20px;text-transform:uppercase;}
@@ -117,14 +117,15 @@ const css = `
   .copied{color:#ff6a00;font-size:12px;font-weight:700;text-align:center;margin-top:6px;}
   .welcome{font-family:'Lilita One',cursive;font-size:20px;color:#1a1a1a;margin-bottom:16px;}
   .empty{text-align:center;color:#ccc;font-size:13px;font-weight:700;padding:20px 0;}
-  .photo-card-wrap{background:linear-gradient(135deg,#ff2d55,#ff6a00,#ffcc00);border-radius:20px;padding:3px;margin-bottom:16px;}
-  .photo-card{background:#fff;border-radius:18px;padding:24px;text-align:center;}
-  .photo-card-emoji{font-size:40px;margin-bottom:8px;}
-  .photo-card-event{font-family:'Lilita One',cursive;font-size:22px;color:#ff2d55;margin-bottom:4px;}
-  .photo-card-date{font-size:16px;font-weight:800;color:#1a1a1a;margin-bottom:4px;}
-  .photo-card-time{font-size:14px;font-weight:700;color:#ff6a00;margin-bottom:4px;}
-  .photo-card-detail{font-size:13px;font-weight:600;color:#888;margin-bottom:2px;}
-  .photo-card-watermark{font-size:10px;color:#ccc;font-weight:700;margin-top:12px;letter-spacing:1px;}
+  .photo-card-wrap{background:linear-gradient(135deg,#ff2d55,#ff6a00,#ffcc00);border-radius:20px;padding:3px;margin:16px 0;}
+  .photo-card{background:#fff;border-radius:18px;padding:28px;text-align:center;}
+  .photo-card-emoji{font-size:48px;margin-bottom:10px;}
+  .photo-card-event{font-family:'Lilita One',cursive;font-size:26px;color:#ff2d55;margin-bottom:6px;}
+  .photo-card-date{font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:4px;}
+  .photo-card-time{font-size:15px;font-weight:700;color:#ff6a00;margin-bottom:6px;}
+  .photo-card-detail{font-size:13px;font-weight:600;color:#888;margin-bottom:3px;}
+  .photo-card-watermark{font-size:10px;color:#ddd;font-weight:700;margin-top:14px;letter-spacing:2px;}
+  .btn-download{width:100%;background:linear-gradient(135deg,#ffcc00,#ff6a00);border:none;border-radius:14px;padding:14px;color:#fff;font-size:14px;font-family:'Lilita One',cursive;letter-spacing:1px;cursor:pointer;margin-top:8px;}
   input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(40%) sepia(80%) saturate(500%) hue-rotate(320deg);cursor:pointer;}
   input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(40%) sepia(80%) saturate(500%) hue-rotate(320deg);cursor:pointer;}
 `;
@@ -374,6 +375,9 @@ function Results({ trip, onBack }) {
   const [showCard, setShowCard] = useState(false);
   const [finalSet, setFinalSet] = useState(trip.final_date || null);
   const [finalTime, setFinalTime] = useState(trip.final_time || "");
+  const [cardVenue, setCardVenue] = useState("");
+  const [cardDressCode, setCardDressCode] = useState("");
+  const [cardDisclaimer, setCardDisclaimer] = useState("");
 
   const fetchData = async () => {
     try { const data = await getResponses(trip.id); setResponses(data); } catch {}
@@ -395,9 +399,12 @@ function Results({ trip, onBack }) {
 
   const confirmFinal = async () => {
     if (!selectedFinal) return;
-    await setFinalDate(trip.id, selectedFinal, selectedTime);
+    try { await setFinalDate(trip.id, selectedFinal, selectedTime); } catch(e) {}
     setFinalSet(selectedFinal);
     setFinalTime(selectedTime);
+    setCardVenue(venue);
+    setCardDressCode(dressCode);
+    setCardDisclaimer(disclaimer);
     setShowCard(true);
   };
 
@@ -405,7 +412,7 @@ function Results({ trip, onBack }) {
     <div className="card">
       <div className="badge">📊 Results</div>
       <h2 className="card-title">{trip.event_name}</h2>
-      <p className="card-sub">{responses.length} {responses.length===1?"person":"people"} responded · live updates</p>
+      <p className="card-sub">{responses.length} {responses.length===1?"person":"people"} responded · live</p>
       <div className="divider" />
       {loading && <div className="empty">Loading…</div>}
       {summary.map(({date,count,people})=>(
@@ -422,66 +429,67 @@ function Results({ trip, onBack }) {
           </div>
         </div>
       ))}
+
       <div className="divider" />
-      {!finalSet ? (
+
+      {showCard ? (
         <>
-          <div className="badge" style={{marginBottom:12}}>🗓 Pick final date</div>
-          <label className="label">Choose the date</label>
-          <div className="chip-list">
-            {(trip.dates||[]).map(d=>(
-              <button key={d} onClick={()=>setSelectedFinal(d)} style={{background:selectedFinal===d?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedFinal===d?"#fff":"#aaa",border:selectedFinal===d?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-                📅 {formatDate(d)}
-              </button>
-            ))}
-          </div>
-          {selectedFinal && <>
-            <label className="label">Choose the time</label>
-            <div className="chip-list">
-              {timeSlots.map(t=>(
-                <button key={t} onClick={()=>setSelectedTime(t)} style={{background:selectedTime===t?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedTime===t?"#fff":"#aaa",border:selectedTime===t?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-                  ⏰ {t}
-                </button>
-              ))}
+          <div className="badge" style={{marginBottom:12}}>🎉 It's happening!</div>
+          <div className="photo-card-wrap">
+            <div className="photo-card">
+              <div className="photo-card-emoji">🎡</div>
+              <div className="photo-card-event">{trip.event_name}</div>
+              <div className="photo-card-date">📅 {formatDate(finalSet)}</div>
+              {finalTime && <div className="photo-card-time">⏰ {finalTime}</div>}
+              {cardVenue && <div className="photo-card-detail">📍 {cardVenue}</div>}
+              {cardDressCode && <div className="photo-card-detail">👗 {cardDressCode}</div>}
+              {cardDisclaimer && <div className="photo-card-detail">📝 {cardDisclaimer}</div>}
+              <div className="photo-card-watermark">MADE WITH MEHOURLY</div>
             </div>
-            <label className="label">Venue (optional)</label>
-            <input className="input" placeholder="e.g. Thorpe Park, Surrey" value={venue} onChange={e=>setVenue(e.target.value)} />
-            <label className="label">Dress code (optional)</label>
-            <input className="input" placeholder="e.g. Smart casual" value={dressCode} onChange={e=>setDressCode(e.target.value)} />
-            <label className="label">Disclaimer / extra info (optional)</label>
-            <input className="input" placeholder="e.g. Bring ID, tickets on the door" value={disclaimer} onChange={e=>setDisclaimer(e.target.value)} />
-            <button className="btn-primary" onClick={confirmFinal}>🎉 Confirm & generate card</button>
-          </>}
+          </div>
+          <p style={{fontSize:12,color:"#aaa",fontWeight:600,textAlign:"center",marginBottom:12}}>Screenshot & share with your crew! 📲</p>
+          <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
         </>
       ) : (
         <>
-          {showCard && (
+          {!finalSet ? (
             <>
-              <div className="badge" style={{marginBottom:12}}>🎉 Final date set!</div>
-              <div className="photo-card-wrap">
-                <div className="photo-card">
-                  <div className="photo-card-emoji">🎡</div>
-                  <div className="photo-card-event">{trip.event_name}</div>
-                  <div className="photo-card-date">📅 {formatDate(finalSet)}</div>
-                  {finalTime && <div className="photo-card-time">⏰ {finalTime}</div>}
-                  {venue && <div className="photo-card-detail">📍 {venue}</div>}
-                  {dressCode && <div className="photo-card-detail">👗 {dressCode}</div>}
-                  {disclaimer && <div className="photo-card-detail">📝 {disclaimer}</div>}
-                  <div className="photo-card-watermark">MADE WITH MEHOURLY</div>
-                </div>
+              <div className="badge" style={{marginBottom:12}}>🗓 Pick final date</div>
+              <label className="label">Choose the date</label>
+              <div className="chip-list">
+                {(trip.dates||[]).map(d=>(
+                  <button key={d} onClick={()=>setSelectedFinal(d)} style={{background:selectedFinal===d?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedFinal===d?"#fff":"#888",border:selectedFinal===d?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                    📅 {formatDate(d)}
+                  </button>
+                ))}
               </div>
-              <p style={{fontSize:12,color:"#aaa",fontWeight:600,textAlign:"center",marginBottom:16}}>Screenshot this card and share it with your crew! 📲</p>
+              {selectedFinal && <>
+                <label className="label">Choose the time</label>
+                <div className="chip-list">
+                  {timeSlots.map(t=>(
+                    <button key={t} onClick={()=>setSelectedTime(t)} style={{background:selectedTime===t?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedTime===t?"#fff":"#888",border:selectedTime===t?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      ⏰ {t}
+                    </button>
+                  ))}
+                </div>
+                <label className="label">Venue (optional)</label>
+                <input className="input" placeholder="e.g. Thorpe Park, Surrey" value={venue} onChange={e=>setVenue(e.target.value)} />
+                <label className="label">Dress code (optional)</label>
+                <input className="input" placeholder="e.g. Smart casual" value={dressCode} onChange={e=>setDressCode(e.target.value)} />
+                <label className="label">Extra info (optional)</label>
+                <input className="input" placeholder="e.g. Bring ID, tickets on the door" value={disclaimer} onChange={e=>setDisclaimer(e.target.value)} />
+                <button className="btn-primary" onClick={confirmFinal}>🎉 Confirm & generate card</button>
+              </>}
             </>
-          )}
-          {!showCard && (
+          ) : (
             <div style={{background:"#fff3f5",border:"1.5px solid #ffb3c1",borderRadius:14,padding:14,marginBottom:16}}>
               <div style={{fontWeight:800,fontSize:14,color:"#ff2d55",marginBottom:4}}>✅ Final date: {formatDate(finalSet)}</div>
               {finalTime && <div style={{fontSize:13,color:"#ff6a00",fontWeight:700}}>⏰ {finalTime}</div>}
             </div>
           )}
+          <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
         </>
       )}
-      <div className="divider" />
-      <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
     </div>
   );
 }
