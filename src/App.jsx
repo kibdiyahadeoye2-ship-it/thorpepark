@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const SUPABASE_URL = "https://ihctymhrzsuvscvsxtnl.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloY3R5bWhyenN1dnNjdnN4dG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2OTA1NzAsImV4cCI6MjA5NjI2NjU3MH0.vmGy-nsegLhtQ0LN03uv7X02rt8io_3vgOXpnK-7NfQ";
@@ -48,14 +48,20 @@ async function getTrip(id) {
 async function getOrganizerTrips(organizerId) {
   return await sbFetch(`trips?organizer_id=eq.${organizerId}&select=*&order=created_at.desc`) || [];
 }
+async function deleteTrip(id) {
+  return sbFetch(`trips?id=eq.${id}`, { method: "DELETE" });
+}
 async function saveResponse(tripId, name, selections) {
   return sbFetch("responses", { method: "POST", body: JSON.stringify({ trip_id: tripId, name, selections }) });
 }
 async function getResponses(tripId) {
   return await sbFetch(`responses?trip_id=eq.${tripId}&select=*&order=created_at.asc`) || [];
 }
-async function setFinalDate(tripId, finalDate, finalTime) {
-  return sbFetch(`trips?id=eq.${tripId}`, { method: "PATCH", body: JSON.stringify({ final_date: finalDate, final_time: finalTime }), headers: { "Prefer": "return=representation" } });
+async function deleteResponse(id) {
+  return sbFetch(`responses?id=eq.${id}`, { method: "DELETE" });
+}
+async function setFinalDate(tripId, finalDate, finalTime, venue, dressCode, disclaimer) {
+  return sbFetch(`trips?id=eq.${tripId}`, { method: "PATCH", body: JSON.stringify({ final_date: finalDate, final_time: finalTime, venue, dress_code: dressCode, disclaimer }), headers: { "Prefer": "return=representation" } });
 }
 
 const css = `
@@ -82,6 +88,8 @@ const css = `
   .btn-secondary{width:100%;background:transparent;border:2px solid #ffe0e6;border-radius:14px;padding:13px;color:#ff6a00;font-size:14px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;transition:border-color .2s;margin-top:8px;}
   .btn-secondary:hover{border-color:#ff2d55;}
   .btn-small{background:linear-gradient(135deg,#ff2d55,#ff6a00);border:none;color:#fff;border-radius:10px;padding:10px 16px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;white-space:nowrap;}
+  .btn-danger{background:#fff0f0;border:1.5px solid #ffb3b3;color:#ff2d55;border-radius:10px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;}
+  .btn-download{width:100%;background:linear-gradient(135deg,#ffcc00,#ff6a00);border:none;border-radius:14px;padding:14px;color:#fff;font-size:14px;font-family:'Lilita One',cursive;letter-spacing:1px;cursor:pointer;margin-top:8px;}
   .error{color:#ff2d55;font-size:13px;font-weight:700;margin:4px 0 10px;}
   .row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
   .chip-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
@@ -109,7 +117,7 @@ const css = `
   .best-tag{background:linear-gradient(135deg,#ffcc00,#ff6a00);color:#fff;font-size:9px;font-weight:900;letter-spacing:2px;padding:3px 10px;border-radius:20px;text-transform:uppercase;}
   .count{font-size:12px;font-weight:700;color:#ff6a00;background:#fff3e0;border-radius:20px;padding:3px 10px;}
   .people{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
-  .person{background:#fff3f5;border:1.5px solid #ffb3c1;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;color:#ff2d55;}
+  .person{display:flex;align-items:center;gap:6px;background:#fff3f5;border:1.5px solid #ffb3c1;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;color:#ff2d55;}
   .person-time{color:#ff9a00;font-weight:600;}
   .link-box{background:#fff8f0;border:2px dashed #ffcc00;border-radius:14px;padding:14px;margin-bottom:16px;}
   .link-row{display:flex;gap:8px;align-items:center;margin-top:8px;}
@@ -117,6 +125,10 @@ const css = `
   .copied{color:#ff6a00;font-size:12px;font-weight:700;text-align:center;margin-top:6px;}
   .welcome{font-family:'Lilita One',cursive;font-size:20px;color:#1a1a1a;margin-bottom:16px;}
   .empty{text-align:center;color:#ccc;font-size:13px;font-weight:700;padding:20px 0;}
+  .responder-list{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+  .responder-row{display:flex;justify-content:space-between;align-items:center;background:#fff8f0;border:1.5px solid #ffe0c0;border-radius:10px;padding:8px 12px;}
+  .responder-name{font-size:13px;font-weight:700;color:#1a1a1a;}
+  .responder-time{font-size:11px;color:#aaa;font-weight:600;}
   .photo-card-wrap{background:linear-gradient(135deg,#ff2d55,#ff6a00,#ffcc00);border-radius:20px;padding:3px;margin:16px 0;}
   .photo-card{background:#fff;border-radius:18px;padding:28px;text-align:center;}
   .photo-card-emoji{font-size:48px;margin-bottom:10px;}
@@ -125,7 +137,6 @@ const css = `
   .photo-card-time{font-size:15px;font-weight:700;color:#ff6a00;margin-bottom:6px;}
   .photo-card-detail{font-size:13px;font-weight:600;color:#888;margin-bottom:3px;}
   .photo-card-watermark{font-size:10px;color:#ddd;font-weight:700;margin-top:14px;letter-spacing:2px;}
-  .btn-download{width:100%;background:linear-gradient(135deg,#ffcc00,#ff6a00);border:none;border-radius:14px;padding:14px;color:#fff;font-size:14px;font-family:'Lilita One',cursive;letter-spacing:1px;cursor:pointer;margin-top:8px;}
   input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(40%) sepia(80%) saturate(500%) hue-rotate(320deg);cursor:pointer;}
   input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(40%) sepia(80%) saturate(500%) hue-rotate(320deg);cursor:pointer;}
 `;
@@ -160,7 +171,7 @@ function AuthScreen({ onAuth }) {
       <p className="card-sub">{mode === "login" ? "Log in to manage your events." : "Sign up to start organising."}</p>
       {mode === "signup" && <>
         <label className="label">Your name</label>
-        <input className="input" placeholder="e.g. Kibdiyah" value={name} onChange={e=>setName(e.target.value)} />
+        <input className="input" placeholder="e.g. Sarah" value={name} onChange={e=>setName(e.target.value)} />
       </>}
       <label className="label">Email</label>
       <input className="input" type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} />
@@ -179,14 +190,21 @@ function Dashboard({ organizer, onCreateEvent, onViewResults, onLogout }) {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(null);
+  const [deleting, setDeleting] = useState(null);
 
-  useEffect(() => {
-    getOrganizerTrips(organizer.id).then(t => { setTrips(t); setLoading(false); });
-  }, [organizer.id]);
+  const load = () => getOrganizerTrips(organizer.id).then(t => { setTrips(t); setLoading(false); });
+  useEffect(() => { load(); }, [organizer.id]);
 
   const copy = (trip) => {
     const url = `${window.location.origin}${window.location.pathname}#guest_${trip.id}`;
     navigator.clipboard.writeText(url).then(() => { setCopied(trip.id); setTimeout(()=>setCopied(null),2000); });
+  };
+
+  const handleDelete = async (trip) => {
+    if (!window.confirm(`Delete "${trip.event_name}"? This cannot be undone.`)) return;
+    setDeleting(trip.id);
+    try { await deleteTrip(trip.id); setTrips(trips.filter(t=>t.id!==trip.id)); } catch(e) {}
+    setDeleting(null);
   };
 
   return (
@@ -202,7 +220,8 @@ function Dashboard({ organizer, onCreateEvent, onViewResults, onLogout }) {
           <div className="event-card-sub">{t.dates?.length} possible date{t.dates?.length !== 1 ? "s" : ""} · {t.time_slots?.length} time slot{t.time_slots?.length !== 1 ? "s" : ""}</div>
           <div className="event-card-actions">
             <button className="btn-copy" onClick={()=>copy(t)}>{copied===t.id ? "✓ Copied!" : "📋 Copy link"}</button>
-            <button className="btn-results" onClick={()=>onViewResults(t)}>📊 See results</button>
+            <button className="btn-results" onClick={()=>onViewResults(t)}>📊 Results</button>
+            <button className="btn-danger" onClick={()=>handleDelete(t)} disabled={deleting===t.id}>{deleting===t.id?"…":"🗑 Delete"}</button>
           </div>
         </div>
       ))}
@@ -344,7 +363,7 @@ function GuestForm({ trip }) {
       <h2 className="card-title">{trip.event_name}</h2>
       <p className="card-sub">Pick your time for each date you can make it.</p>
       <label className="label">Your name</label>
-      <input className="input" placeholder="e.g. Jordan" value={name} onChange={e=>setName(e.target.value)} />
+      <input className="input" placeholder="e.g. Sarah" value={name} onChange={e=>setName(e.target.value)} />
       <label className="label">Dates & time</label>
       <div style={{marginBottom:20}}>
         {trip.dates.map(date => (
@@ -367,17 +386,18 @@ function GuestForm({ trip }) {
 function Results({ trip, onBack }) {
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showResponders, setShowResponders] = useState(false);
   const [selectedFinal, setSelectedFinal] = useState(null);
   const [selectedTime, setSelectedTime] = useState("");
-  const [venue, setVenue] = useState("");
-  const [dressCode, setDressCode] = useState("");
-  const [disclaimer, setDisclaimer] = useState("");
-  const [showCard, setShowCard] = useState(false);
+  const [venue, setVenue] = useState(trip.venue || "");
+  const [dressCode, setDressCode] = useState(trip.dress_code || "");
+  const [disclaimer, setDisclaimer] = useState(trip.disclaimer || "");
   const [finalSet, setFinalSet] = useState(trip.final_date || null);
   const [finalTime, setFinalTime] = useState(trip.final_time || "");
-  const [cardVenue, setCardVenue] = useState("");
-  const [cardDressCode, setCardDressCode] = useState("");
-  const [cardDisclaimer, setCardDisclaimer] = useState("");
+  const [finalVenue, setFinalVenue] = useState(trip.venue || "");
+  const [finalDressCode, setFinalDressCode] = useState(trip.dress_code || "");
+  const [finalDisclaimer, setFinalDisclaimer] = useState(trip.disclaimer || "");
+  const cardRef = useRef(null);
 
   const fetchData = async () => {
     try { const data = await getResponses(trip.id); setResponses(data); } catch {}
@@ -391,7 +411,7 @@ function Results({ trip, onBack }) {
       const sel = typeof r.selections === "string" ? JSON.parse(r.selections) : r.selections;
       return sel[date];
     });
-    return { date, count: avail.length, people: avail.map(r => { const sel = typeof r.selections==="string"?JSON.parse(r.selections):r.selections; return {name:r.name,time:sel[date]}; }) };
+    return { date, count: avail.length, people: avail.map(r => { const sel = typeof r.selections==="string"?JSON.parse(r.selections):r.selections; return {name:r.name,time:sel[date],id:r.id}; }) };
   }).sort((a,b)=>b.count-a.count);
 
   const max = summary[0]?.count||0;
@@ -399,20 +419,56 @@ function Results({ trip, onBack }) {
 
   const confirmFinal = async () => {
     if (!selectedFinal) return;
-    try { await setFinalDate(trip.id, selectedFinal, selectedTime); } catch(e) {}
+    try { await setFinalDate(trip.id, selectedFinal, selectedTime, venue, dressCode, disclaimer); } catch(e) {}
     setFinalSet(selectedFinal);
     setFinalTime(selectedTime);
-    setCardVenue(venue);
-    setCardDressCode(dressCode);
-    setCardDisclaimer(disclaimer);
-    setShowCard(true);
+    setFinalVenue(venue);
+    setFinalDressCode(dressCode);
+    setFinalDisclaimer(disclaimer);
+  };
+
+  const handleDeleteResponse = async (id) => {
+    if (!window.confirm("Remove this person's response?")) return;
+    try { await deleteResponse(id); setResponses(responses.filter(r=>r.id!==id)); } catch(e) {}
+  };
+
+  const downloadCard = () => {
+    if (!cardRef.current) return;
+    const el = cardRef.current;
+    const w = window.open("", "_blank");
+    w.document.write(`<html><body style="margin:0;background:#fff">${el.outerHTML}<br><p style="text-align:center;font-family:sans-serif;color:#aaa;font-size:12px">Right-click the card and save as image, or take a screenshot</p></body></html>`);
+    w.document.close();
   };
 
   return (
     <div className="card">
-      <div className="badge">📊 Results</div>
-      <h2 className="card-title">{trip.event_name}</h2>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div className="badge" style={{marginBottom:0}}>📊 Results</div>
+        <button onClick={()=>setShowResponders(!showResponders)} style={{background:"#fff3f5",border:"1.5px solid #ffb3c1",color:"#ff2d55",borderRadius:10,padding:"6px 12px",fontSize:11,fontWeight:800,cursor:"pointer"}}>
+          {showResponders ? "Hide" : "👥 Who responded"}
+        </button>
+      </div>
+      <h2 className="card-title" style={{marginTop:10}}>{trip.event_name}</h2>
       <p className="card-sub">{responses.length} {responses.length===1?"person":"people"} responded · live</p>
+
+      {showResponders && (
+        <div style={{background:"#fff8f0",border:"1.5px solid #ffe0c0",borderRadius:14,padding:14,marginBottom:16}}>
+          <div style={{fontWeight:800,fontSize:12,color:"#ff6a00",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>All responders</div>
+          {responses.length === 0 && <div style={{color:"#ccc",fontSize:13}}>No responses yet</div>}
+          <div className="responder-list">
+            {responses.map(r => (
+              <div key={r.id} className="responder-row">
+                <div>
+                  <div className="responder-name">{r.name}</div>
+                  <div className="responder-time">Responded {new Date(r.created_at).toLocaleDateString()}</div>
+                </div>
+                <button className="btn-danger" onClick={()=>handleDeleteResponse(r.id)}>🗑 Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="divider" />
       {loading && <div className="empty">Loading…</div>}
       {summary.map(({date,count,people})=>(
@@ -425,71 +481,69 @@ function Results({ trip, onBack }) {
             </div>
           </div>
           <div className="people">
-            {people.map(p=><span key={p.name} className="person">{p.name} <span className="person-time">at {p.time}</span></span>)}
+            {people.map(p=>(
+              <span key={p.id} className="person">
+                {p.name} <span className="person-time">at {p.time}</span>
+              </span>
+            ))}
           </div>
         </div>
       ))}
 
       <div className="divider" />
 
-      {showCard ? (
+      {finalSet ? (
         <>
           <div className="badge" style={{marginBottom:12}}>🎉 It's happening!</div>
-          <div className="photo-card-wrap">
+          <div className="photo-card-wrap" ref={cardRef}>
             <div className="photo-card">
               <div className="photo-card-emoji">🎡</div>
               <div className="photo-card-event">{trip.event_name}</div>
               <div className="photo-card-date">📅 {formatDate(finalSet)}</div>
               {finalTime && <div className="photo-card-time">⏰ {finalTime}</div>}
-              {cardVenue && <div className="photo-card-detail">📍 {cardVenue}</div>}
-              {cardDressCode && <div className="photo-card-detail">👗 {cardDressCode}</div>}
-              {cardDisclaimer && <div className="photo-card-detail">📝 {cardDisclaimer}</div>}
+              {finalVenue && <div className="photo-card-detail">📍 {finalVenue}</div>}
+              {finalDressCode && <div className="photo-card-detail">👗 {finalDressCode}</div>}
+              {finalDisclaimer && <div className="photo-card-detail">📝 {finalDisclaimer}</div>}
               <div className="photo-card-watermark">MADE WITH MEHOURLY</div>
             </div>
           </div>
-          <p style={{fontSize:12,color:"#aaa",fontWeight:600,textAlign:"center",marginBottom:12}}>Screenshot & share with your crew! 📲</p>
-          <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
+          <button className="btn-download" onClick={downloadCard}>⬇️ Download / Share card</button>
+          <p style={{fontSize:11,color:"#aaa",fontWeight:600,textAlign:"center",margin:"8px 0 12px"}}>Or screenshot and send to your crew 📲</p>
+          <button onClick={()=>setFinalSet(null)} style={{width:"100%",background:"none",border:"none",color:"#aaa",fontSize:12,fontWeight:700,cursor:"pointer",padding:"8px 0"}}>Change final date</button>
         </>
       ) : (
         <>
-          {!finalSet ? (
-            <>
-              <div className="badge" style={{marginBottom:12}}>🗓 Pick final date</div>
-              <label className="label">Choose the date</label>
-              <div className="chip-list">
-                {(trip.dates||[]).map(d=>(
-                  <button key={d} onClick={()=>setSelectedFinal(d)} style={{background:selectedFinal===d?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedFinal===d?"#fff":"#888",border:selectedFinal===d?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-                    📅 {formatDate(d)}
-                  </button>
-                ))}
-              </div>
-              {selectedFinal && <>
-                <label className="label">Choose the time</label>
-                <div className="chip-list">
-                  {timeSlots.map(t=>(
-                    <button key={t} onClick={()=>setSelectedTime(t)} style={{background:selectedTime===t?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedTime===t?"#fff":"#888",border:selectedTime===t?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-                      ⏰ {t}
-                    </button>
-                  ))}
-                </div>
-                <label className="label">Venue (optional)</label>
-                <input className="input" placeholder="e.g. Thorpe Park, Surrey" value={venue} onChange={e=>setVenue(e.target.value)} />
-                <label className="label">Dress code (optional)</label>
-                <input className="input" placeholder="e.g. Smart casual" value={dressCode} onChange={e=>setDressCode(e.target.value)} />
-                <label className="label">Extra info (optional)</label>
-                <input className="input" placeholder="e.g. Bring ID, tickets on the door" value={disclaimer} onChange={e=>setDisclaimer(e.target.value)} />
-                <button className="btn-primary" onClick={confirmFinal}>🎉 Confirm & generate card</button>
-              </>}
-            </>
-          ) : (
-            <div style={{background:"#fff3f5",border:"1.5px solid #ffb3c1",borderRadius:14,padding:14,marginBottom:16}}>
-              <div style={{fontWeight:800,fontSize:14,color:"#ff2d55",marginBottom:4}}>✅ Final date: {formatDate(finalSet)}</div>
-              {finalTime && <div style={{fontSize:13,color:"#ff6a00",fontWeight:700}}>⏰ {finalTime}</div>}
+          <div className="badge" style={{marginBottom:12}}>🗓 Pick final date</div>
+          <label className="label">Choose the date</label>
+          <div className="chip-list">
+            {(trip.dates||[]).map(d=>(
+              <button key={d} onClick={()=>setSelectedFinal(d)} style={{background:selectedFinal===d?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedFinal===d?"#fff":"#888",border:selectedFinal===d?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                📅 {formatDate(d)}
+              </button>
+            ))}
+          </div>
+          {selectedFinal && <>
+            <label className="label">Choose the time</label>
+            <div className="chip-list">
+              {timeSlots.map(t=>(
+                <button key={t} onClick={()=>setSelectedTime(t)} style={{background:selectedTime===t?"linear-gradient(135deg,#ff2d55,#ff6a00)":"#f9f9f9",color:selectedTime===t?"#fff":"#888",border:selectedTime===t?"none":"2px solid #eee",borderRadius:10,padding:"8px 14px",fontFamily:"Nunito",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                  ⏰ {t}
+                </button>
+              ))}
             </div>
-          )}
-          <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
+            <label className="label">Venue (optional)</label>
+            <input className="input" placeholder="e.g. Thorpe Park, Surrey" value={venue} onChange={e=>setVenue(e.target.value)} />
+            <label className="label">Dress code (optional)</label>
+            <input className="input" placeholder="e.g. Smart casual" value={dressCode} onChange={e=>setDressCode(e.target.value)} />
+            <label className="label">Extra info (optional)</label>
+            <input className="input" placeholder="e.g. Bring ID, tickets on the door" value={disclaimer} onChange={e=>setDisclaimer(e.target.value)} />
+            <button className="btn-primary" onClick={confirmFinal}>🎉 Confirm & generate card</button>
+          </>}
         </>
       )}
+
+      <div className="divider" />
+      <button className="btn-secondary" onClick={onBack}>← Back to dashboard</button>
     </div>
   );
 }
